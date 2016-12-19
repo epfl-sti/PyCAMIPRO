@@ -1,6 +1,10 @@
 import usb.core
 import sys
 
+def writeline(filename ,line):
+    with open(filename, 'a') as file:
+        file.write(line + '\n')
+        file.close()
 
 def read_usb_camipro_baltec():
     # Baltech:
@@ -35,9 +39,7 @@ def read_usb_camipro_baltec():
                     data = ep.read(ep.wMaxPacketSize * 4, timeout_secs * 1000)
                     o = []
                     i = "".join([ (chr(d) if d >= 47 else "") for d in data])
-                    with open('pyusb', 'a') as file:
-                        file.write(i + '\n')
-                        file.close()
+                    writeline('pyusb',i )
                     o.append(i)
                     print o[:]
 
@@ -74,9 +76,7 @@ def read_usb_camipro_elatec():
                         o = []
                         i = "".join([ (chr(d) if d >= 32 else '') for d in data])
                         o.append(i)
-                        file = open("pyusb","w")
-                        file.write(i)
-                        file.close()
+                        writeline('pyusb',i )
                         print o[0]
                         #   print o[1]
 
