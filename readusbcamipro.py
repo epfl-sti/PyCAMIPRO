@@ -11,7 +11,7 @@ def read_usb_camipro_baltec():
     idVendor  = 0x13ad
     idProduct = 0x9cab
     interface = 0
-    timeout_secs = 5
+    timeout_secs = 5 
 
     dev = usb.core.find(idVendor=idVendor, idProduct=idProduct)
     if (dev is None):
