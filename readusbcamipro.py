@@ -38,7 +38,7 @@ def read_usb_camipro_baltec():
         try:
                     data = ep.read(ep.wMaxPacketSize * 4, timeout_secs * 1000)
                     o = []
-                    i = "".join([ (chr(d) if d >= 47 else "") for d in data])
+                    i = "".join([ (chr(d) if d >= 31 else "") for d in data])
                     writeline('pyusb',i )
                     o.append(i)
                     print o[:]
@@ -74,14 +74,14 @@ def read_usb_camipro_elatec():
         try:
                         data = ep.read(ep.wMaxPacketSize, timeout_secs * 1000)
                         o = []
-                        i = "".join([ (chr(d) if d >= 32 else '') for d in data])
-                        o.append(i)
+                        i = "".join([ (chr(d) if d >= 31 else "") for d in data])
                         writeline('pyusb',i )
-                        print o[0]
-                        #   print o[1]
+                        o.append(i)
+                        print o[:]
 
         except usb.core.USBError as e:
             print e
             break
 
 read_usb_camipro_baltec()
+read_usb_camipro_elatec()
