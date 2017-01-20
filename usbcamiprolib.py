@@ -17,13 +17,14 @@ def open_usb_camipro(marque):
 
 
 class CamiproAbstract(object):
+    def __init__(self):
+        self._endpoint = None
 
     def read(self):
-        ep = self.open_endpoint()
 
         while True:
             try:
-                i = self._read_low_level(ep)
+                i = self._read_low_level()
                 o = []
                 writeline('pyusb',i )
                 o.append(i)
@@ -34,6 +35,11 @@ class CamiproAbstract(object):
                 break
 
     def open_endpoint(self):
+        if self._endpoint is None:
+            self._endpoint = self._really_open_endpoint()
+        return self._endpoint
+
+    def _really_open_endpoint(self):
         interface = 0
 
         dev = usb.core.find(idVendor=self._idVendor, idProduct=self._idProduct)
@@ -61,9 +67,9 @@ class Elatec(CamiproAbstract):
     _idVendor = 0x09d8
     _idProduct = 0x0406
 
-    def _read_low_level(self, ep):
+    def _read_low_level(self):
         timeout_secs = 10
-        data = ep.read(ep.wMaxPacketSize, timeout_secs * 1000)
+        data = self.open_endpoint().read(ep.wMaxPacketSize, timeout_secs * 1000)
         i = "".join([ (chr(d) if d >= 31 else "") for d in data])
         return i
 
@@ -76,6 +82,6 @@ class Baltec(CamiproAbstract):
 
     def _read_low_level(self, ep):
         timeout_secs = 5
-        data = ep.read(ep.wMaxPacketSize * 4, timeout_secs * 1000)
+        data = self.open_endpoint().read(ep.wMaxPacketSize * 4, timeout_secs * 1000)
         i = "".join([ (chr(d) if d >= 31 else "") for d in data])
         return i
