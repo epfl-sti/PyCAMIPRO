@@ -8,28 +8,6 @@ def writeline(filename ,line):
         file.close()
 
 
-def open_endpoint(camipro):
-    interface = 0
-
-    dev = usb.core.find(idVendor=camipro.idVendor, idProduct=camipro.idProduct)
-    if dev.is_kernel_driver_active(interface) is True:
-        #print "but we need to detach kernel driver"
-        dev.detach_kernel_driver(interface)
-
-    dev.set_configuration()
-    cfg = dev.get_active_configuration()
-    intf = list(cfg)[0]
-    ep = usb.util.find_descriptor(
-                intf,
-                # match the first IN endpoint
-                custom_match = \
-                lambda e: \
-                    usb.util.endpoint_direction(e.bEndpointAddress) == \
-                    usb.util.ENDPOINT_IN
-            )
-    assert ep is not None
-    return ep
-
 def open_usb_camipro(marque):
     if marque is "Baltec":
         return Baltec()
@@ -37,46 +15,77 @@ def open_usb_camipro(marque):
         return Elatec()
     raise Error("Marque inconnue : " + marque)
 
-class Elatec(object):
 
-    idVendor = 0x09d8
-    idProduct = 0x0406
+class CamiproAbstract(object):
+
+    def open_endpoint(self):
+        interface = 0
+
+        dev = usb.core.find(idVendor=self._idVendor, idProduct=self._idProduct)
+        if dev.is_kernel_driver_active(interface) is True:
+            #print "but we need to detach kernel driver"
+            dev.detach_kernel_driver(interface)
+
+        dev.set_configuration()
+        cfg = dev.get_active_configuration()
+        intf = list(cfg)[0]
+        ep = usb.util.find_descriptor(
+            intf,
+            # match the first IN endpoint
+            custom_match = \
+            lambda e: \
+            usb.util.endpoint_direction(e.bEndpointAddress) == \
+            usb.util.ENDPOINT_IN
+            )
+        assert ep is not None
+        return ep
+
+
+class Elatec(CamiproAbstract):
+
+    _idVendor = 0x09d8
+    _idProduct = 0x0406
+
+    def _read_low_level(self, ep):
+        timeout_secs = 10
+        data = ep.read(ep.wMaxPacketSize, timeout_secs * 1000)
+        i = "".join([ (chr(d) if d >= 31 else "") for d in data])
+        return i
+
 
     def read(self):
-        ep = open_endpoint(self)
+        ep = self.open_endpoint()
 
-        timeout_secs = 10
         while True:
             try:
-                            data = ep.read(ep.wMaxPacketSize, timeout_secs * 1000)
-                            o = []
-                            i = "".join([ (chr(d) if d >= 31 else "") for d in data])
-                            writeline('pyusb',i )
-                            o.append(i)
-                            print o[:]
+                i = self._read_low_level(ep)
+                o = []
+                writeline('pyusb',i )
+                o.append(i)
+                print o[:]
 
             except usb.core.USBError as e:
                 print e
                 break
 
-class Baltec(object):
+class Baltec(CamiproAbstract):
 
-    idVendor  = 0x13ad
-    idProduct = 0x9cab
+    _idVendor  = 0x13ad
+    _idProduct = 0x9cab
 
     def read(self):
-            ep = open_endpoint(self)
+        ep = self.open_endpoint()
 
-            timeout_secs = 5
-            while True:
-                try:
-                            data = ep.read(ep.wMaxPacketSize * 4, timeout_secs * 1000)
-                            o = []
-                            i = "".join([ (chr(d) if d >= 31 else "") for d in data])
-                            writeline('pyusb',i )
-                            o.append(i)
-                            print o[:]
+        timeout_secs = 5
+        while True:
+            try:
+                data = ep.read(ep.wMaxPacketSize * 4, timeout_secs * 1000)
+                o = []
+                i = "".join([ (chr(d) if d >= 31 else "") for d in data])
+                writeline('pyusb',i )
+                o.append(i)
+                print o[:]
 
-                except usb.core.USBError as e:
-                    print e
-                    break
+            except usb.core.USBError as e:
+                print e
+                break
