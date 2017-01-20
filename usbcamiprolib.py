@@ -8,12 +8,27 @@ def writeline(filename ,line):
         file.close()
 
 
+def open_endpoint(camipro):
+    interface = 0
 
+    dev = usb.core.find(idVendor=camipro.idVendor, idProduct=camipro.idProduct)
+    if dev.is_kernel_driver_active(interface) is True:
+        #print "but we need to detach kernel driver"
+        dev.detach_kernel_driver(interface)
 
-
-
-
-
+    dev.set_configuration()
+    cfg = dev.get_active_configuration()
+    intf = list(cfg)[0]
+    ep = usb.util.find_descriptor(
+                intf,
+                # match the first IN endpoint
+                custom_match = \
+                lambda e: \
+                    usb.util.endpoint_direction(e.bEndpointAddress) == \
+                    usb.util.ENDPOINT_IN
+            )
+    assert ep is not None
+    return ep
 
 def open_usb_camipro(marque):
     if marque is "Baltec":
@@ -24,30 +39,13 @@ def open_usb_camipro(marque):
 
 class Elatec(object):
 
+    idVendor = 0x09d8
+    idProduct = 0x0406
+
     def read(self):
-        #Elatec
-        idVendor = 0x09d8
-        idProduct = 0x0406
-        interface = 0
-        timeout_secs = 5
+        ep = open_endpoint(self)
 
-        dev = usb.core.find(idVendor=idVendor, idProduct=idProduct)
-        if dev.is_kernel_driver_active(interface) is True:
-            #print "but we need to detach kernel driver"
-            dev.detach_kernel_driver(interface)
-
-        dev.set_configuration()
-        cfg = dev.get_active_configuration()
-        intf = list(cfg)[0]
-        ep = usb.util.find_descriptor(
-                    intf,
-                    # match the first IN endpoint
-                    custom_match = \
-                    lambda e: \
-                        usb.util.endpoint_direction(e.bEndpointAddress) == \
-                        usb.util.ENDPOINT_IN
-                )
-        assert ep is not None
+        timeout_secs = 10
         while True:
             try:
                             data = ep.read(ep.wMaxPacketSize, timeout_secs * 1000)
@@ -62,34 +60,14 @@ class Elatec(object):
                 break
 
 class Baltec(object):
+
+    idVendor  = 0x13ad
+    idProduct = 0x9cab
+
     def read(self):
-            # Elatech:
-            idVendor  = 0x13ad
-            idProduct = 0x9cab
-            interface = 0
+            ep = open_endpoint(self)
+
             timeout_secs = 5
-
-            dev = usb.core.find(idVendor=idVendor, idProduct=idProduct)
-            if (dev is None):
-                print ("Aucun lecteur !!!")
-                sys.exit()
-            if dev.is_kernel_driver_active(interface) is True:
-                #print "but we need to detach kernel driver"
-                dev.detach_kernel_driver(interface)
-
-            dev.set_configuration()
-            cfg = dev.get_active_configuration()
-            intf = list(cfg)[0]
-            ep = usb.util.find_descriptor(
-                        intf,
-                        # match the first IN endpoint
-                        custom_match = \
-                        lambda e: \
-                            usb.util.endpoint_direction(e.bEndpointAddress) == \
-                            usb.util.ENDPOINT_IN
-                    )
-            assert ep is not None
-
             while True:
                 try:
                             data = ep.read(ep.wMaxPacketSize * 4, timeout_secs * 1000)
