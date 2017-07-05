@@ -61,6 +61,12 @@ class CamiproAbstract(object):
         assert ep is not None
         return ep
 
+    def _read_low_level(self):
+        """Read one CAMIPRO number out of the reader
+
+        The result is in colon-separated hex form e.g.: "31:0f:2e:0a:00:10:05:ed"
+        """
+        raise NotImplementedError
 
 class Elatec(CamiproAbstract):
 
@@ -69,9 +75,10 @@ class Elatec(CamiproAbstract):
 
     def _read_low_level(self):
         timeout_secs = 10
-        data = self.open_endpoint().read(ep.wMaxPacketSize, timeout_secs * 1000)
-        i = "".join([ (chr(d) if d >= 31 else "") for d in data])
-        return i
+        data = self.open_endpoint().read(self.open_endpoint().wMaxPacketSize, timeout_secs * 1000)
+        elatec = "".join([ (chr(d) if d >= 31 else "") for d in data])
+        elatec = ":".join([elatec[len(elatec)-2*i:][:2] for i in range(1,8)])
+        return elatec
 
 
 
@@ -80,8 +87,10 @@ class Baltec(CamiproAbstract):
     _idVendor  = 0x13ad
     _idProduct = 0x9cab
 
-    def _read_low_level(self, ep):
+    def _read_low_level(self):
         timeout_secs = 5
-        data = self.open_endpoint().read(ep.wMaxPacketSize * 4, timeout_secs * 1000)
-        i = "".join([ (chr(d) if d >= 31 else "") for d in data])
-        return i
+        data = self.open_endpoint().read(self.open_endpoint().wMaxPacketSize * 4, timeout_secs * 1000)
+        baltec_decimal = int("".join([ (chr(d) if d >= 31 else "") for d in data]))
+        baltec_hexa = "%016x" % baltec_decimal
+
+        return ":".join([baltec_hexa[2*i:2*i+2] for i in range(0,7)])
